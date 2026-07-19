@@ -131,6 +131,44 @@ textarea{min-height:74px;resize:vertical}
 .livecalc .lc.bad{border-color:var(--danger)}
 .livecalc .lc.bad b{color:var(--danger)}
 
+/* Unit toggles */
+.unitseg{display:inline-flex;background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:2px;flex:none}
+.unitseg button{background:none;border:none;color:var(--dim);font-size:11px;font-weight:800;padding:5px 11px;border-radius:5px;cursor:pointer;letter-spacing:.4px}
+.unitseg button.on{background:var(--wood);color:#241a0c}
+.mhead{display:flex;gap:8px;align-items:center;margin-bottom:6px}
+.mhead .measlbl{margin-bottom:0}
+.conv{font-size:11px;color:var(--faint);margin-top:5px;text-align:right}
+.globalunit{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin-top:14px}
+.globalunit span{font-size:12px;color:var(--dim);font-weight:600}
+
+/* Measurement section headers — hard to confuse the two blocks */
+.seclabel{display:flex;align-items:center;gap:8px;margin:20px 0 8px;font-size:12px;font-weight:800;letter-spacing:.8px;text-transform:uppercase}
+.seclabel .dot{width:12px;height:12px;border-radius:3px;flex:none}
+.seclabel.ent{color:var(--ink)}
+.seclabel.ent .dot{background:var(--dim)}
+.seclabel.wd{color:var(--wood)}
+.seclabel.wd .dot{background:var(--wood)}
+.secbox{border-left:3px solid var(--line);padding-left:10px}
+.secbox.wd{border-left-color:var(--wood)}
+.measitem.suspect{border-color:var(--danger);background:#1b0f0d}
+.measitem .fixrow{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:7px;font-size:12px;color:#f0b8b2}
+.measitem .fixrow button{background:var(--wood);color:#241a0c;border:none;border-radius:7px;padding:6px 10px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+
+/* Segmented control */
+.seg{display:flex;background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:3px;margin:4px 0 12px}
+.seg button{flex:1;background:none;border:none;color:var(--dim);padding:9px 4px;font-size:12px;font-weight:700;border-radius:7px;cursor:pointer}
+.seg button.on{background:var(--wood);color:#241a0c}
+.costpanel .crow{display:flex;justify-content:space-between;align-items:baseline;padding:9px 0;border-bottom:1px dashed var(--line);font-size:14px}
+.costpanel .crow:last-child{border-bottom:none}
+.costpanel .crow b{font-size:19px;font-weight:800;font-variant-numeric:tabular-nums}
+.costpanel .crow small{display:block;color:var(--faint);font-size:11px;font-weight:400}
+.costpanel .crow.wall b{color:var(--wall)}
+.costpanel .crow.wood b{color:var(--wood)}
+.costpanel .crow.grand{border-top:2px solid var(--line);margin-top:6px;padding-top:12px}
+.costpanel .crow.grand b{color:var(--ok);font-size:24px}
+.costpanel .diff{margin-top:10px;background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:11px;font-size:13px;color:var(--dim)}
+.costpanel .diff b{color:var(--ink)}
+
 /* Mismatch warning */
 .mwarn{margin-top:12px;background:#241512;border:1px solid #6b3a30;border-left:4px solid var(--danger);border-radius:8px;padding:10px 12px;font-size:13px;color:#f0b8b2}
 .badge-warn{font-size:11px;color:#f0b8b2;background:#241512;border:1px solid #6b3a30;padding:2px 8px;border-radius:20px;white-space:nowrap}
@@ -196,17 +234,29 @@ textarea{min-height:74px;resize:vertical}
       <option>Exterior</option>
       <option>Other</option>
     </select>
-    <label>Entire area — length × breadth (ft)</label>
-    <div id="entList"></div>
-    <button class="btn ghost" type="button" onclick="addEntItem()">＋ Add measurement</button>
-    <label>Extra entire area (sq ft) — optional</label>
-    <input type="number" id="entExtra" inputmode="decimal" placeholder="0">
+    <div class="globalunit">
+      <span>Default entry unit for new rows</span>
+      <div class="unitseg" id="globalUnit">
+        <button type="button" onclick="setDefaultUnit('ft')">FT</button>
+        <button type="button" onclick="setDefaultUnit('in')">IN</button>
+      </div>
+    </div>
 
-    <label style="margin-top:20px">Wood area — doors, windows, cupboards (L × B in ft)</label>
-    <div id="woodList"></div>
-    <button class="btn ghost" type="button" onclick="addWoodItem()">＋ Add door / window</button>
-    <label>Extra wood area (sq ft) — optional</label>
-    <input type="number" id="woodExtra" inputmode="decimal" placeholder="0">
+    <div class="seclabel ent"><span class="dot"></span>1 · Entire area — measure the room</div>
+    <div class="secbox">
+      <div id="entList"></div>
+      <button class="btn ghost" type="button" onclick="addEntItem()">＋ Add measurement</button>
+      <label>Extra entire area (sq ft) — optional</label>
+      <input type="number" id="entExtra" inputmode="decimal" placeholder="0">
+    </div>
+
+    <div class="seclabel wd"><span class="dot"></span>2 · Wood only — doors, windows, cupboards</div>
+    <div class="secbox wd">
+      <div id="woodList"></div>
+      <button class="btn ghost" type="button" onclick="addWoodItem()">＋ Add door / window</button>
+      <label>Extra wood area (sq ft) — optional</label>
+      <input type="number" id="woodExtra" inputmode="decimal" placeholder="0">
+    </div>
 
     <div class="livecalc">
       <div class="lc tot"><b id="dispEnt">0</b><span>Entire sq ft</span></div>
@@ -252,29 +302,40 @@ textarea{min-height:74px;resize:vertical}
   </div>
 
   <div class="card">
-    <h2>Labour cost (₹ per sq ft)</h2>
+    <h2>Labour cost</h2>
     <div class="raterow">
-      <div class="rlabel">Entire area<small id="areaTotalLbl">0 sq ft</small></div>
+      <div class="rlabel">Entire area rate<small id="areaTotalLbl">0 sq ft</small></div>
       <input type="number" id="rateTotal" inputmode="decimal" placeholder="₹/sq ft">
       <div class="ramount" id="costTotal">—</div>
     </div>
     <div class="raterow wall">
-      <div class="rlabel">Wall paint only<small id="areaWallLbl">0 sq ft</small></div>
+      <div class="rlabel">Wall paint rate<small id="areaWallLbl">0 sq ft</small></div>
       <input type="number" id="rateWall" inputmode="decimal" placeholder="₹/sq ft">
       <div class="ramount" id="costWall">—</div>
     </div>
     <div class="raterow wood">
-      <div class="rlabel">Wood paint only<small id="areaWoodLbl">0 sq ft</small></div>
+      <div class="rlabel">Wood paint rate<small id="areaWoodLbl">0 sq ft</small></div>
       <input type="number" id="rateWood" inputmode="decimal" placeholder="₹/sq ft">
       <div class="ramount" id="costWood">—</div>
     </div>
-    <div class="combined" id="combinedRow" style="display:none"><span>Wall + Wood labour</span><b id="costCombined">—</b></div>
-    <div class="photometa" style="margin-top:10px">Rates are saved on this device and appear in reports when set.</div>
+
+    <label style="margin-top:16px">Costing method</label>
+    <div class="seg" id="costSeg">
+      <button onclick="setCostMode('entire')">Entire area</button>
+      <button onclick="setCostMode('split')">Wall + Wood</button>
+      <button onclick="setCostMode('compare')">Compare</button>
+    </div>
+    <div class="costpanel" id="costPanel"></div>
   </div>
 
   <div class="card">
     <h2>Settings</h2>
-    <label>Mismatch tolerance (%)</label>
+    <label>Warn if wood exceeds this % of a room</label>
+    <input type="number" id="woodPctInput" inputmode="decimal" min="0" max="100" placeholder="35">
+    <label>Warn if a single wood item exceeds (sq ft)</label>
+    <input type="number" id="woodItemInput" inputmode="decimal" min="0" placeholder="60">
+    <div class="photometa" style="margin-top:8px">These two catch a room measurement accidentally typed into the wood block. A normal door is about 21 sq ft, a window 12–16.</div>
+    <label style="margin-top:16px">Mismatch tolerance (%)</label>
     <input type="number" id="tolInput" inputmode="decimal" min="0" max="100" placeholder="5">
     <div class="photometa" style="margin-top:8px">Wall area is now derived automatically (Entire − Wood), so new rooms always tally. This flags older rooms, or imported ones, where Entire ≠ Wall + Wood by more than this %.</div>
   </div>
@@ -302,10 +363,12 @@ textarea{min-height:74px;resize:vertical}
   <div class="card">
     <h2>Backup</h2>
     <div class="btnrow">
-      <button class="btn" onclick="exportJSON()">Export JSON</button>
-      <button class="btn" onclick="document.getElementById('jsonInput').click()">Import JSON</button>
+      <button class="btn" onclick="exportJSON(false)">Export (data only)</button>
+      <button class="btn" onclick="exportJSON(true)">Export + photos</button>
     </div>
+    <button class="btn" onclick="document.getElementById('jsonInput').click()">Import JSON (merge-safe)</button>
     <input type="file" id="jsonInput" accept=".json,application/json" hidden>
+    <div class="photometa" id="storageChip" style="margin-top:10px"></div>
     <button class="btn danger ghost" onclick="wipeAll()">Delete all data</button>
   </div>
 </section>
@@ -331,25 +394,98 @@ textarea{min-height:74px;resize:vertical}
 
 <script>
 "use strict";
-/* ---------- IndexedDB ---------- */
+/* ---------- IndexedDB ----------
+   v2 layout:
+     rooms  : { id, name, number, floor, total, wall, wood, entItems, woodItems, notes, photoIds[] }
+     photos : { id, roomId, blob, size }   ← real Blobs, not base64
+   Blobs are ~33% smaller than dataURLs and never have to be held as
+   giant strings in memory, which is what made large uploads hang.       */
 let db;
-const DB_NAME="PaintLogDB", STORE="rooms";
+const DB_NAME="PaintLogDB", STORE="rooms", PSTORE="photos";
 function initDB(){return new Promise((res,rej)=>{
-  const rq=indexedDB.open(DB_NAME,1);
-  rq.onupgradeneeded=e=>{const d=e.target.result;
-    if(!d.objectStoreNames.contains(STORE)) d.createObjectStore(STORE,{keyPath:"id",autoIncrement:true});};
+  const rq=indexedDB.open(DB_NAME,2);
+  rq.onupgradeneeded=e=>{
+    const d=e.target.result;
+    if(!d.objectStoreNames.contains(STORE)) d.createObjectStore(STORE,{keyPath:"id",autoIncrement:true});
+    if(!d.objectStoreNames.contains(PSTORE)){
+      const ps=d.createObjectStore(PSTORE,{keyPath:"id",autoIncrement:true});
+      ps.createIndex("roomId","roomId",{unique:false});
+    }
+  };
   rq.onsuccess=()=>{db=rq.result;res();};
   rq.onerror=()=>rej(rq.error);
 });}
 const tx=(mode)=>db.transaction(STORE,mode).objectStore(STORE);
-const dbAll=()=>new Promise((res,rej)=>{const r=tx("readonly").getAll();r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});
-const dbPut=(o)=>new Promise((res,rej)=>{const r=tx("readwrite").put(o);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});
-const dbAdd=(o)=>new Promise((res,rej)=>{const r=tx("readwrite").add(o);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});
-const dbDel=(id)=>new Promise((res,rej)=>{const r=tx("readwrite").delete(id);r.onsuccess=()=>res();r.onerror=()=>rej(r.error);});
-const dbClear=()=>new Promise((res,rej)=>{const r=tx("readwrite").clear();r.onsuccess=()=>res();r.onerror=()=>rej(r.error);});
+const ptx=(mode)=>db.transaction(PSTORE,mode).objectStore(PSTORE);
+const req=r=>new Promise((res,rej)=>{r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});
+
+const dbAll=()=>req(tx("readonly").getAll());
+const dbPut=(o)=>req(tx("readwrite").put(o));
+const dbAdd=(o)=>req(tx("readwrite").add(o));
+const dbDel=(id)=>req(tx("readwrite").delete(id));
+const dbClear=()=>req(tx("readwrite").clear());
+
+const photoAdd=(rec)=>req(ptx("readwrite").add(rec));
+const photoGet=(id)=>req(ptx("readonly").get(id));
+const photoDel=(id)=>req(ptx("readwrite").delete(id));
+const photoClear=()=>req(ptx("readwrite").clear());
+const photosOfRoom=(roomId)=>req(ptx("readonly").index("roomId").getAll(roomId));
+async function photosByIds(ids){
+  const out=[];
+  for(const id of ids||[]){const p=await photoGet(id);if(p)out.push(p);}
+  return out;
+}
+async function deleteRoomPhotos(roomId){
+  const ps=await photosOfRoom(roomId);
+  for(const p of ps) await photoDel(p.id);
+}
+
+/* Blob ⇄ dataURL helpers (dataURL only used for reports & JSON backup) */
+const blobToDataURL=b=>new Promise((res,rej)=>{const f=new FileReader();f.onload=()=>res(f.result);f.onerror=()=>rej(f.error);f.readAsDataURL(b);});
+const dataURLToBlob=async u=>(await fetch(u)).blob();
+
+/* One-time migration: old rooms stored base64 strings inside the room record */
+async function migratePhotos(){
+  const rooms=await dbAll();
+  const old=rooms.filter(r=>Array.isArray(r.photos)&&r.photos.length);
+  if(!old.length){
+    // still normalise rooms that have neither field
+    for(const r of rooms) if(!r.photoIds){r.photoIds=[];delete r.photos;await dbPut(r);}
+    return;
+  }
+  toast("Upgrading photo storage…");
+  for(const r of old){
+    const ids=[];
+    for(const u of r.photos){
+      try{
+        const blob=await dataURLToBlob(u);
+        ids.push(await photoAdd({roomId:r.id,blob,size:blob.size}));
+      }catch(e){}
+    }
+    r.photoIds=ids; delete r.photos;
+    await dbPut(r);
+  }
+  toast("Photo storage upgraded ✔");
+}
+
+/* Ask the browser not to evict our data, and report space used */
+async function initStorage(){
+  try{ if(navigator.storage&&navigator.storage.persist) await navigator.storage.persist(); }catch(e){}
+  updateStorageChip();
+}
+async function updateStorageChip(){
+  const el=$("storageChip"); if(!el)return;
+  try{
+    const est=await navigator.storage.estimate();
+    const used=est.usage||0, quota=est.quota||0;
+    const mb=n=>(n/1048576).toFixed(n>10485760?0:1)+" MB";
+    el.textContent=quota?`Storage used: ${mb(used)} of ${mb(quota)}`:`Storage used: ${mb(used)}`;
+  }catch(e){el.textContent="";}
+}
 
 /* ---------- State ---------- */
-let formPhotos=[];          // dataURLs for room currently in the form
+let formPhotos=[];          // [{id|null, blob, url}] for the room in the form
+let originalPhotoIds=[];    // photo ids that were on the room when editing began
 let lbList=[], lbIdx=0;
 
 /* ---------- Helpers ---------- */
@@ -362,7 +498,7 @@ function toast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show")
 /* ---------- Settings (rates + tolerance) ---------- */
 const SETTINGS_KEY="paintlog-settings";
 function getSettings(){
-  let s={tol:5,rateTotal:0,rateWall:0,rateWood:0};
+  let s={tol:5,rateTotal:0,rateWall:0,rateWood:0,costMode:"compare",woodMaxPct:35,woodItemMax:60,defaultUnit:"ft"};
   try{Object.assign(s,JSON.parse(localStorage.getItem(SETTINGS_KEY)||"{}"));}catch(e){}
   return s;
 }
@@ -392,70 +528,179 @@ function showTab(name){
   if(name==="summary") renderSummary();
 }
 
-/* ---------- Photo compression ---------- */
-function compressImage(file){
-  return new Promise((res,rej)=>{
-    const img=new Image();
-    const url=URL.createObjectURL(file);
-    img.onload=()=>{
-      URL.revokeObjectURL(url);
-      const MAX=1400;
-      let w=img.width,h=img.height;
-      if(w>MAX||h>MAX){const s=MAX/Math.max(w,h);w=Math.round(w*s);h=Math.round(h*s);}
-      const c=document.createElement("canvas");c.width=w;c.height=h;
-      c.getContext("2d").drawImage(img,0,0,w,h);
-      let q=0.75, out=c.toDataURL("image/jpeg",q);
-      while(out.length>560000&&q>0.4){q-=0.1;out=c.toDataURL("image/jpeg",q);}   // ~ <420KB binary
-      res(out);
-    };
-    img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error("Cannot read image"));};
+/* ---------- Photo compression (Blob out, never base64) ---------- */
+const MAX_EDGE=1600, TARGET=380*1024;
+
+async function decode(file){
+  if(window.createImageBitmap){
+    try{ return await createImageBitmap(file); }catch(e){}
+  }
+  return await new Promise((res,rej)=>{
+    const img=new Image(), url=URL.createObjectURL(file);
+    img.onload=()=>{URL.revokeObjectURL(url);res(img);};
+    img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error("decode failed"));};
     img.src=url;
   });
 }
+const canvasToBlob=(c,q)=>new Promise(res=>c.toBlob(res,"image/jpeg",q));
+
+async function compressToBlob(file){
+  const src=await decode(file);
+  const iw=src.width, ih=src.height;
+  let w=iw,h=ih;
+  if(Math.max(w,h)>MAX_EDGE){const s=MAX_EDGE/Math.max(w,h);w=Math.round(w*s);h=Math.round(h*s);}
+  const c=document.createElement("canvas");c.width=w;c.height=h;
+  c.getContext("2d",{alpha:false}).drawImage(src,0,0,w,h);
+  if(src.close)src.close();                       // free the decoded bitmap immediately
+  let q=0.72, blob=await canvasToBlob(c,q);
+  let guard=0;
+  while(blob&&blob.size>TARGET&&q>0.42&&guard++<3){ q-=0.12; blob=await canvasToBlob(c,q); }
+  c.width=c.height=0;                             // release canvas memory
+  if(!blob) throw new Error("encode failed");
+  return blob;
+}
+
+let busy=false;
+function setBusy(on,msg){
+  busy=on;
+  document.querySelectorAll(".btn").forEach(b=>b.disabled=on);
+  if(msg)$("photoMeta").textContent=msg;
+}
 async function handleFiles(files){
-  for(const f of files){
-    if(!f.type.startsWith("image/")) continue;
-    try{formPhotos.push(await compressImage(f));}
-    catch(e){toast("One image could not be read");}
+  if(busy){toast("Still working on the last batch");return;}
+  const imgs=files.filter(f=>f.type.startsWith("image/")||/\.(jpe?g|png|webp|heic|heif)$/i.test(f.name));
+  if(!imgs.length){toast("No images selected");return;}
+  setBusy(true);
+  let ok=0,fail=0;
+  for(let i=0;i<imgs.length;i++){
+    setBusy(true,`Compressing ${i+1} of ${imgs.length}…`);
+    await new Promise(r=>setTimeout(r,0));        // let the UI repaint between photos
+    try{
+      const blob=await compressToBlob(imgs[i]);
+      formPhotos.push({id:null,blob,url:URL.createObjectURL(blob)});
+      ok++;
+      renderFormPhotos(true);                     // show each one as it lands
+    }catch(e){ fail++; }
   }
+  setBusy(false);
   renderFormPhotos();
+  if(fail)toast(`${ok} added, ${fail} could not be read`);
+  else if(ok)toast(`${ok} photo(s) ready`);
 }
 $("fileInput").addEventListener("change",e=>{handleFiles([...e.target.files]);e.target.value="";});
 $("camInput").addEventListener("change",e=>{handleFiles([...e.target.files]);e.target.value="";});
 
-function renderFormPhotos(){
+function renderFormPhotos(keepMsg){
   const g=$("formPhotos");
-  g.innerHTML=formPhotos.map((p,i)=>`<div class="thumb" onclick="openLightbox(formPhotos,${i},'New room photos')"><img src="${p}"><button class="del" onclick="event.stopPropagation();removeFormPhoto(${i})">✕</button></div>`).join("");
-  const kb=Math.round(formPhotos.reduce((a,p)=>a+p.length*0.75,0)/1024);
-  $("photoMeta").textContent=formPhotos.length?`${formPhotos.length} photo(s) · approx ${kb>1024?(kb/1024).toFixed(1)+" MB":kb+" KB"}`:"";
+  g.innerHTML=formPhotos.map((p,i)=>`<div class="thumb" onclick="openFormLightbox(${i})"><img src="${p.url}"><button class="del" onclick="event.stopPropagation();removeFormPhoto(${i})">✕</button></div>`).join("");
+  if(keepMsg)return;
+  const kb=Math.round(formPhotos.reduce((a,p)=>a+p.blob.size,0)/1024);
+  $("photoMeta").textContent=formPhotos.length?`${formPhotos.length} photo(s) · ${kb>1024?(kb/1024).toFixed(1)+" MB":kb+" KB"}`:"";
 }
-function removeFormPhoto(i){formPhotos.splice(i,1);renderFormPhotos();}
+function removeFormPhoto(i){
+  URL.revokeObjectURL(formPhotos[i].url);
+  formPhotos.splice(i,1);
+  renderFormPhotos();
+}
+function openFormLightbox(i){openLightbox(formPhotos.map(p=>p.url),i,"Room photos");}
+function releaseFormPhotos(){formPhotos.forEach(p=>{try{URL.revokeObjectURL(p.url);}catch(e){}});formPhotos=[];}
 
-/* ---------- Measurement rows (L × B) ---------- */
+/* ---------- Measurement rows (L × B, feet or inches) ---------- */
 let entItems=[], woodItems=[];
 
-function addEntItem(l,b,label){entItems.push({l:l||"",b:b||"",label:label||""});renderMeas();}
-function addWoodItem(l,b,label){woodItems.push({l:l||"",b:b||"",label:label||""});renderMeas();}
-function removeMeas(kind,i){(kind==="ent"?entItems:woodItems).splice(i,1);renderMeas();}
-function setMeas(kind,i,field,val){(kind==="ent"?entItems:woodItems)[i][field]=val;recalcForm();}
-
-function itemArea(it){return num(it.l)*num(it.b);}
+const unitOf=it=>it.unit==="in"?"in":"ft";          // legacy rows had no unit → feet
+const toFt=(v,u)=>u==="in"?num(v)/12:num(v);
+function itemArea(it){const u=unitOf(it);return toFt(it.l,u)*toFt(it.b,u);}
 function sumItems(list){return list.reduce((a,it)=>a+itemArea(it),0);}
 
+function blankItem(){return {l:"",b:"",label:"",unit:getSettings().defaultUnit||"ft"};}
+function addEntItem(){entItems.push(blankItem());renderMeas();}
+function addWoodItem(){woodItems.push(blankItem());renderMeas();}
+function removeMeas(kind,i){(kind==="ent"?entItems:woodItems).splice(i,1);renderMeas();}
+function setUnit(kind,i,u){(kind==="ent"?entItems:woodItems)[i].unit=u;renderMeas();}
+function setDefaultUnit(u){
+  saveSettings({defaultUnit:u});
+  /* rows still empty adopt the new unit; typed rows keep theirs */
+  [entItems,woodItems].forEach(list=>list.forEach(it=>{if(!num(it.l)&&!num(it.b))it.unit=u;}));
+  renderMeas();
+  toast("New rows entered in "+(u==="in"?"inches":"feet"));
+}
+function syncGlobalUnit(){
+  const u=getSettings().defaultUnit||"ft", seg=$("globalUnit");
+  if(seg)[...seg.children].forEach(b=>b.classList.toggle("on",b.textContent.trim().toLowerCase()===u));
+}
+function setMeas(kind,i,field,val){
+  (kind==="ent"?entItems:woodItems)[i][field]=val;
+  recalcForm();
+  if(field!=="label"){refreshSuspects();refreshConv(kind,i);}
+}
+/* Live "= 7.5 × 3 ft" hint under a row entered in inches */
+function convText(it){
+  if(unitOf(it)!=="in")return "";
+  const l=num(it.l),b=num(it.b);
+  if(!l&&!b)return "";
+  return `= ${(l/12).toFixed(2)} ft × ${(b/12).toFixed(2)} ft`;
+}
+function refreshConv(kind,i){
+  const list=(kind==="ent"?$("entList"):$("woodList")).querySelectorAll(".measitem");
+  const n=list[i]; if(!n)return;
+  const it=(kind==="ent"?entItems:woodItems)[i];
+  const c=n.querySelector(".conv"); if(c)c.textContent=convText(it);
+  const eq=n.querySelector(".eq"); if(eq)eq.textContent=fmt(itemArea(it))+" ft²";
+}
+/* Toggle the red highlight without rebuilding inputs (keeps keyboard focus) */
+function refreshSuspects(){
+  const nodes=$("woodList").querySelectorAll(".measitem");
+  woodItems.forEach((it,i)=>{
+    const n=nodes[i]; if(!n)return;
+    const bad=isSuspectWood(it);
+    if(bad===n.classList.contains("suspect"))return;
+    n.outerHTML=measRowHTML("wood",it,i,"Label (e.g. Main door, window 1)");
+  });
+}
+
 function measRowHTML(kind,it,i,ph){
-  return `<div class="measitem">
-    <input class="measlbl" type="text" placeholder="${ph}" value="${esc(it.label)}"
-      oninput="setMeas('${kind}',${i},'label',this.value)">
+  const suspect = kind==="wood" && isSuspectWood(it);
+  const u=unitOf(it), unitWord=u==="in"?"in":"ft";
+  return `<div class="measitem${suspect?" suspect":""}">
+    <div class="mhead">
+      <input class="measlbl" type="text" placeholder="${ph}" value="${esc(it.label)}"
+        oninput="setMeas('${kind}',${i},'label',this.value)">
+      <div class="unitseg">
+        <button type="button" class="${u==="ft"?"on":""}" onclick="setUnit('${kind}',${i},'ft')">FT</button>
+        <button type="button" class="${u==="in"?"on":""}" onclick="setUnit('${kind}',${i},'in')">IN</button>
+      </div>
+    </div>
     <div class="measrow">
-      <input type="number" inputmode="decimal" placeholder="Length" value="${it.l}"
+      <input type="number" inputmode="decimal" placeholder="Length ${unitWord}" value="${it.l}"
         oninput="setMeas('${kind}',${i},'l',this.value)">
       <span class="x">×</span>
-      <input type="number" inputmode="decimal" placeholder="Breadth" value="${it.b}"
+      <input type="number" inputmode="decimal" placeholder="Breadth ${unitWord}" value="${it.b}"
         oninput="setMeas('${kind}',${i},'b',this.value)">
       <span class="eq">${fmt(itemArea(it))} ft²</span>
       <button class="rm" type="button" onclick="removeMeas('${kind}',${i})">✕</button>
     </div>
+    <div class="conv">${convText(it)}</div>
+    ${suspect?`<div class="fixrow"><span>⚠ Too big for a door or window — did this belong in Entire area?</span>
+      <button type="button" onclick="moveToEntire(${i})">Move up ↑</button></div>`:""}
   </div>`;
+}
+/* A single wood item bigger than this many sq ft is almost certainly a
+   room measurement typed into the wrong block. */
+function isSuspectWood(it){
+  const a=itemArea(it);
+  if(a<=0)return false;
+  const s=getSettings();
+  if(a>=s.woodItemMax)return true;                       // absolute guard
+  const ent=sumItems(entItems)+num($("entExtra").value);
+  return ent>0 && a > ent*0.5;                           // over half the room
+}
+function moveToEntire(i){
+  const it=woodItems.splice(i,1)[0];
+  entItems.push(it);
+  if(!woodItems.length)woodItems=[blankItem()];
+  renderMeas();
+  toast("Moved to Entire area");
 }
 function renderMeas(){
   $("entList").innerHTML = entItems.length
@@ -464,6 +709,7 @@ function renderMeas(){
   $("woodList").innerHTML = woodItems.length
     ? woodItems.map((it,i)=>measRowHTML("wood",it,i,"Label (e.g. Main door, window 1)")).join("")
     : `<div class="measnone">No wood items yet — tap "Add door / window".</div>`;
+  syncGlobalUnit();
   recalcForm();
 }
 
@@ -478,10 +724,17 @@ function recalcForm(){
   $("dispEnt").textContent=fmt(f.total);
   $("dispWood").textContent=fmt(f.wood);
   $("dispWall").textContent=fmt(f.wall);
-  const w=$("mismatchWarn"), bad=f.wall<0;
+  const w=$("mismatchWarn"), s=getSettings();
+  const bad=f.wall<0;
+  const share=f.total>0?f.wood/f.total*100:0;
+  const high=!bad && f.total>0 && share>s.woodMaxPct;
   document.querySelector(".livecalc .lc.wall").classList.toggle("bad",bad);
+  document.querySelector(".livecalc .lc.wood").classList.toggle("bad",high);
   if(bad){
-    w.innerHTML=`⚠ Wood area (<b>${fmt(f.wood)}</b> sq ft) is larger than the entire area (<b>${fmt(f.total)}</b> sq ft), so wall area comes out negative. Check the measurements.`;
+    w.innerHTML=`⚠ Wood area (<b>${fmt(f.wood)}</b> sq ft) is larger than the entire area (<b>${fmt(f.total)}</b> sq ft), so wall area comes out negative. A room measurement has probably been typed into the wood block.`;
+    w.style.display="block";
+  }else if(high){
+    w.innerHTML=`⚠ Wood is <b>${share.toFixed(0)}%</b> of this room (${fmt(f.wood)} of ${fmt(f.total)} sq ft). That is unusually high — check nothing from the Entire block went into Wood.`;
     w.style.display="block";
   }else w.style.display="none";
 }
@@ -492,26 +745,63 @@ async function saveCurrentRoom(){
   const name=$("rName").value.trim();
   if(!name){toast("Give the room a name");$("rName").focus();return;}
   const f=formFigures();
+  const sset=getSettings();
+  if(f.wall<0){
+    alert(`Wood area (${fmt(f.wood)} sq ft) is bigger than the entire area (${fmt(f.total)} sq ft).\n\nWall area cannot be negative — please correct the measurements before saving.`);
+    return;
+  }
+  const wshare=f.total>0?f.wood/f.total*100:0;
+  if(wshare>sset.woodMaxPct){
+    if(!confirm(`Wood is ${wshare.toFixed(0)}% of this room (${fmt(f.wood)} of ${fmt(f.total)} sq ft).\n\nThat is unusually high — check nothing from the Entire block was typed into Wood.\n\nSave anyway?`))return;
+  }
   const room={
     name, number:$("rNumber").value.trim(), floor:$("rFloor").value,
     total:f.total, wood:f.wood, wall:f.wall,
     entItems:entItems.slice(), woodItems:woodItems.slice(),
     entExtra:num($("entExtra").value), woodExtra:num($("woodExtra").value),
-    notes:$("rNotes").value.trim(), photos:formPhotos.slice(),
+    notes:$("rNotes").value.trim(), photoIds:[],
     updated:Date.now()
   };
   const editId=$("editId").value;
-  if(editId){room.id=Number(editId);await dbPut(room);toast("Room updated");}
-  else{await dbAdd(room);toast("Room saved ✔");}
+  try{
+    /* 1. write the room record (no blobs inside it) */
+    if(editId) room.id=Number(editId);
+    const roomId = editId ? (await dbPut(room),room.id) : await dbAdd(room);
+
+    /* 2. remove photos the user deleted while editing */
+    const kept=new Set(formPhotos.filter(p=>p.id).map(p=>p.id));
+    for(const oldId of originalPhotoIds) if(!kept.has(oldId)) await photoDel(oldId);
+
+    /* 3. write new blobs one at a time, so a failure never loses the room */
+    for(const p of formPhotos){
+      if(p.id) continue;
+      p.id=await photoAdd({roomId,blob:p.blob,size:p.blob.size});
+    }
+
+    /* 4. link them back to the room */
+    room.id=roomId;
+    room.photoIds=formPhotos.map(p=>p.id).filter(Boolean);
+    await dbPut(room);
+    toast(editId?"Room updated":"Room saved ✔");
+  }catch(err){
+    if(err&&(err.name==="QuotaExceededError"||/quota/i.test(err.message||""))){
+      alert("Storage is full. Export a JSON backup, then delete some photos before adding more.");
+    }else{
+      alert("Could not save: "+(err&&err.message?err.message:"unknown error"));
+    }
+    updateStorageChip();
+    return;
+  }
   resetForm();
+  updateStorageChip();
   showTab("rooms");
 }
 function resetForm(){
   ["rName","rNumber","rNotes","editId","entExtra","woodExtra"].forEach(id=>$(id).value="");
   $("rFloor").selectedIndex=0;
-  entItems=[{l:"",b:"",label:""}]; woodItems=[{l:"",b:"",label:""}];
+  entItems=[blankItem()]; woodItems=[blankItem()];
   renderMeas();
-  formPhotos=[];renderFormPhotos();
+  releaseFormPhotos(); originalPhotoIds=[]; renderFormPhotos();
   $("formTitle").textContent="Add a room";
   $("saveBtn").innerHTML="✔ Save room";
   $("cancelEditBtn").style.display="none";
@@ -532,11 +822,15 @@ async function editRoom(id){
     $("entExtra").value=r.entExtra||"";
     $("woodExtra").value=r.woodExtra||"";
   }
-  if(!entItems.length)entItems=[{l:"",b:"",label:""}];
-  if(!woodItems.length)woodItems=[{l:"",b:"",label:""}];
+  if(!entItems.length)entItems=[blankItem()];
+  if(!woodItems.length)woodItems=[blankItem()];
   renderMeas();
   $("rNotes").value=r.notes||"";
-  formPhotos=(r.photos||[]).slice();renderFormPhotos();
+  releaseFormPhotos();
+  const recs=await photosByIds(r.photoIds||[]);
+  formPhotos=recs.map(p=>({id:p.id,blob:p.blob,url:URL.createObjectURL(p.blob)}));
+  originalPhotoIds=recs.map(p=>p.id);
+  renderFormPhotos();
   $("formTitle").textContent="Edit: "+r.name;
   $("saveBtn").innerHTML="✔ Update room";
   $("cancelEditBtn").style.display="block";
@@ -546,12 +840,15 @@ async function editRoom(id){
 async function removeRoom(id){
   const rooms=await dbAll();const r=rooms.find(x=>x.id===id);
   if(!confirm(`Delete "${r?r.name:"this room"}" and its photos?`))return;
-  await dbDel(id);toast("Room deleted");renderRooms();
+  await deleteRoomPhotos(id);
+  await dbDel(id);toast("Room deleted");renderRooms();updateStorageChip();
 }
 async function wipeAll(){
   if(!confirm("Delete ALL rooms and photos? This cannot be undone."))return;
   if(!confirm("Really sure? Export a JSON backup first if needed."))return;
-  await dbClear();toast("All data deleted");renderRooms();renderSummary();
+  await dbClear();await photoClear();
+  releaseFormPhotos();roomThumbCache.forEach(u=>URL.revokeObjectURL(u));roomThumbCache.clear();
+  toast("All data deleted");renderRooms();renderSummary();updateStorageChip();
 }
 
 /* ---------- Rooms list ---------- */
@@ -578,7 +875,7 @@ async function renderRooms(){
       html+=`<div class="floorhead">${esc(r.floor)} <span class="floorsub">wall ${fmt(fw)} · wood ${fmt(fd)} sq ft</span></div>`;
       lastFloor=r.floor;
     }
-    const ph=(r.photos||[]);
+    const ph=(r.photoIds||[]);
     const mi=mismatchInfo(r.total,r.wall,r.wood,tol);
     html+=`<div class="roomcard">
       <div class="roomhead">
@@ -594,7 +891,7 @@ async function renderRooms(){
         <div class="fig wood"><b>${fmt(r.wood)}</b>Wood sq ft</div>
       </div>
       ${r.notes?`<div class="roomnotes">${esc(r.notes)}</div>`:""}
-      ${ph.length?`<div class="minithumbs">${ph.map((p,i)=>`<img src="${p}" onclick="lightboxRoom(${r.id},${i})">`).join("")}</div>`:""}
+      ${ph.length?`<div class="minithumbs" id="thumbs-${r.id}"></div>`:""}
       <div class="roomactions">
         <button class="edit" onclick="editRoom(${r.id})">✏️ Edit</button>
         <button class="remove" onclick="removeRoom(${r.id})">🗑 Delete</button>
@@ -602,12 +899,43 @@ async function renderRooms(){
     </div>`;
   }
   el.innerHTML=html;
+  loadRoomThumbs(rooms);
+}
+
+/* Thumbnails are read from the photo store after the list paints,
+   so a long list never blocks on image data. */
+const roomThumbCache=new Map();   // photoId -> objectURL
+async function loadRoomThumbs(rooms){
+  for(const r of rooms){
+    const holder=$("thumbs-"+r.id);
+    if(!holder||!(r.photoIds||[]).length)continue;
+    for(let i=0;i<r.photoIds.length;i++){
+      const pid=r.photoIds[i];
+      let url=roomThumbCache.get(pid);
+      if(!url){
+        const rec=await photoGet(pid);
+        if(!rec)continue;
+        url=URL.createObjectURL(rec.blob);
+        roomThumbCache.set(pid,url);
+      }
+      const img=document.createElement("img");
+      img.src=url; img.loading="lazy";
+      img.onclick=()=>lightboxRoom(r.id,i);
+      holder.appendChild(img);
+    }
+  }
 }
 
 /* ---------- Lightbox ---------- */
 async function lightboxRoom(id,i){
   const rooms=await dbAll();const r=rooms.find(x=>x.id===id);if(!r)return;
-  openLightbox(r.photos||[],i,(r.number?r.number+". ":"")+r.name);
+  const urls=[];
+  for(const pid of r.photoIds||[]){
+    let u=roomThumbCache.get(pid);
+    if(!u){const rec=await photoGet(pid);if(!rec)continue;u=URL.createObjectURL(rec.blob);roomThumbCache.set(pid,u);}
+    urls.push(u);
+  }
+  openLightbox(urls,i,(r.number?r.number+". ":"")+r.name);
 }
 function openLightbox(list,i,title){
   lbList=list;lbIdx=i;
@@ -654,6 +982,10 @@ async function renderSummary(){
 }
 
 let lastAreas={total:0,wall:0,wood:0};
+function costA(){return lastAreas.total*getSettings().rateTotal;}          // entire area method
+function costB(){const s=getSettings();return lastAreas.wall*s.rateWall+lastAreas.wood*s.rateWood;}
+function setCostMode(m){saveSettings({costMode:m});updateCosts();}
+
 function updateCosts(){
   const s=getSettings();
   $("areaTotalLbl").textContent=fmt(lastAreas.total)+" sq ft";
@@ -662,9 +994,38 @@ function updateCosts(){
   $("costTotal").textContent=s.rateTotal>0?inr(lastAreas.total*s.rateTotal):"—";
   $("costWall").textContent=s.rateWall>0?inr(lastAreas.wall*s.rateWall):"—";
   $("costWood").textContent=s.rateWood>0?inr(lastAreas.wood*s.rateWood):"—";
-  const both=s.rateWall>0&&s.rateWood>0;
-  $("combinedRow").style.display=both?"flex":"none";
-  if(both)$("costCombined").textContent=inr(lastAreas.wall*s.rateWall+lastAreas.wood*s.rateWood);
+
+  const mode=s.costMode||"compare";
+  [...$("costSeg").children].forEach(b=>b.classList.toggle("on",b.textContent.trim()===
+    ({entire:"Entire area",split:"Wall + Wood",compare:"Compare"}[mode])));
+
+  const A=costA(), B=costB(), p=$("costPanel");
+  const perSqft=v=>lastAreas.total>0?`₹${(v/lastAreas.total).toFixed(2)} per sq ft of entire area`:"";
+  const haveA=s.rateTotal>0, haveB=s.rateWall>0||s.rateWood>0;
+
+  if(mode==="entire"){
+    p.innerHTML=!haveA?`<div class="diff">Enter an entire-area rate above to see this costing.</div>`:
+      `<div class="crow"><span>Entire area<small>${fmt(lastAreas.total)} sq ft × ₹${s.rateTotal}</small></span><b>${inr(A)}</b></div>
+       <div class="crow grand"><span>Total labour</span><b>${inr(A)}</b></div>
+       <div class="diff">${perSqft(A)}</div>`;
+  }else if(mode==="split"){
+    p.innerHTML=!haveB?`<div class="diff">Enter wall and wood rates above to see this costing.</div>`:
+      `<div class="crow wall"><span>Wall paint<small>${fmt(lastAreas.wall)} sq ft × ₹${s.rateWall}</small></span><b>${inr(lastAreas.wall*s.rateWall)}</b></div>
+       <div class="crow wood"><span>Wood paint<small>${fmt(lastAreas.wood)} sq ft × ₹${s.rateWood}</small></span><b>${inr(lastAreas.wood*s.rateWood)}</b></div>
+       <div class="crow grand"><span>Total labour</span><b>${inr(B)}</b></div>
+       <div class="diff">${perSqft(B)}</div>`;
+  }else{
+    if(!haveA||!haveB){
+      p.innerHTML=`<div class="diff">Enter all three rates above to compare the two methods.</div>`;
+    }else{
+      const d=B-A, pct=A>0?d/A*100:0;
+      p.innerHTML=
+      `<div class="crow"><span>Method A — entire area<small>${fmt(lastAreas.total)} sq ft × ₹${s.rateTotal}</small></span><b>${inr(A)}</b></div>
+       <div class="crow"><span>Method B — wall + wood<small>${fmt(lastAreas.wall)}×₹${s.rateWall} + ${fmt(lastAreas.wood)}×₹${s.rateWood}</small></span><b>${inr(B)}</b></div>
+       <div class="crow grand"><span>${d>0?"B costs more":d<0?"A costs more":"Identical"}</span><b>${inr(Math.abs(d))}</b></div>
+       <div class="diff">Difference <b>${pct>=0?"+":""}${pct.toFixed(1)}%</b> · Method A works out to <b>₹${lastAreas.total>0?(A/lastAreas.total).toFixed(2):"0"}</b> and Method B to <b>₹${lastAreas.total>0?(B/lastAreas.total).toFixed(2):"0"}</b> per sq ft of entire area.</div>`;
+    }
+  }
 }
 function initSettingsUI(){
   const s=getSettings();
@@ -672,6 +1033,10 @@ function initSettingsUI(){
   $("rateWall").value=s.rateWall||"";
   $("rateWood").value=s.rateWood||"";
   $("tolInput").value=s.tol;
+  $("woodPctInput").value=s.woodMaxPct;
+  $("woodItemInput").value=s.woodItemMax;
+  $("woodPctInput").addEventListener("input",e=>{saveSettings({woodMaxPct:num(e.target.value)});recalcForm();});
+  $("woodItemInput").addEventListener("input",e=>{saveSettings({woodItemMax:num(e.target.value)});renderMeas();});
   $("rateTotal").addEventListener("input",e=>{saveSettings({rateTotal:num(e.target.value)});updateCosts();});
   $("rateWall").addEventListener("input",e=>{saveSettings({rateWall:num(e.target.value)});updateCosts();});
   $("rateWood").addEventListener("input",e=>{saveSettings({rateWood:num(e.target.value)});updateCosts();});
@@ -683,17 +1048,35 @@ function initSettingsUI(){
 
 /* ---------- Reports ---------- */
 function measBreakdown(r){
+  const dim=it=>{
+    const u=(it.unit==="in")?"in":"ft";
+    return u==="in"
+      ? `${it.l} × ${it.b} in <span class="cnv">(${(num(it.l)/12).toFixed(2)} × ${(num(it.b)/12).toFixed(2)} ft)</span>`
+      : `${it.l} × ${it.b} ft`;
+  };
   const rows=(list,cls)=>list.filter(it=>num(it.l)&&num(it.b))
-    .map(it=>`<tr><td>${esc(it.label||"—")}</td><td class="mnum">${it.l} × ${it.b}</td><td class="mnum ${cls}">${fmt(itemArea(it))}</td></tr>`).join("");
+    .map(it=>`<tr><td>${esc(it.label||"—")}</td><td class="mnum">${dim(it)}</td><td class="mnum ${cls}">${fmt(itemArea(it))}</td></tr>`).join("");
   const e=rows(r.entItems||[],""), w=rows(r.woodItems||[],"wood");
   if(!e&&!w&&!r.entExtra&&!r.woodExtra)return"";
-  return `<table class="meas"><tr><th>Measurement</th><th>L × B (ft)</th><th>Sq ft</th></tr>
+  return `<table class="meas"><tr><th>Measurement</th><th>L × B</th><th>Sq ft</th></tr>
     ${e?`<tr class="grp"><td colspan="3">Entire area</td></tr>${e}`:""}
     ${r.entExtra?`<tr><td>Extra entire area</td><td class="mnum">—</td><td class="mnum">${fmt(r.entExtra)}</td></tr>`:""}
     ${w?`<tr class="grp"><td colspan="3">Wood area</td></tr>${w}`:""}
     ${r.woodExtra?`<tr><td>Extra wood area</td><td class="mnum">—</td><td class="mnum wood">${fmt(r.woodExtra)}</td></tr>`:""}
     <tr class="grp"><td colspan="2">Wall area = Entire − Wood</td><td class="mnum wall">${fmt(r.wall)}</td></tr>
   </table>`;
+}
+/* Reports are standalone files, so blobs must become dataURLs — but only
+   for the rooms actually being printed, and only when photos are wanted. */
+async function attachPhotoURLs(rooms,wanted){
+  for(const r of rooms){
+    r._photoURLs=[];
+    if(!wanted)continue;
+    for(const pid of r.photoIds||[]){
+      const rec=await photoGet(pid);
+      if(rec) r._photoURLs.push(await blobToDataURL(rec.blob));
+    }
+  }
 }
 function reportOptions(){
   return {
@@ -714,21 +1097,32 @@ function reportHTML(allRooms,opt){
   // Big total cards at top
   const bigCards=cols.map(c=>`<div class="bigcard ${c.cls}"><div class="bignum">${fmt(sum(c.key))}</div><div class="biglabel">${c.label}<br>sq&nbsp;ft</div></div>`).join("");
 
-  // Labour cost table (only when rates are set)
-  const s=getSettings();
-  const costRows=[];
-  if(opt.total&&s.rateTotal>0)costRows.push({label:"Entire Area",area:sum("total"),rate:s.rateTotal,cls:"tot"});
-  if(opt.wall&&s.rateWall>0)costRows.push({label:"Wall Paint",area:sum("wall"),rate:s.rateWall,cls:"wall"});
-  if(opt.wood&&s.rateWood>0)costRows.push({label:"Wood Paint",area:sum("wood"),rate:s.rateWood,cls:"wood"});
+  // Labour cost table — follows the costing method chosen in Summary
+  const s=getSettings(), mode=s.costMode||"compare";
+  const rupee=n=>"₹"+Math.round(n).toLocaleString("en-IN");
+  const A=sum("total")*s.rateTotal, B=sum("wall")*s.rateWall+sum("wood")*s.rateWood;
+  const haveA=s.rateTotal>0, haveB=s.rateWall>0&&s.rateWood>0;
   let costTable="";
-  if(costRows.length){
-    const rupee=n=>"₹"+Math.round(n).toLocaleString("en-IN");
-    const combined=(opt.wall&&s.rateWall>0&&opt.wood&&s.rateWood>0)
-      ?`<tr class="grand"><td class="tname">Wall + Wood Labour</td><td class="num" colspan="2"></td><td class="num">${rupee(sum("wall")*s.rateWall+sum("wood")*s.rateWood)}</td></tr>`:"";
-    costTable=`<h3>Labour Cost</h3>
-    <table><tr><th>Work</th><th>Area<br><small>sq ft</small></th><th>Rate<br><small>₹ / sq ft</small></th><th>Amount<br><small>₹</small></th></tr>
-    ${costRows.map(c=>`<tr><td class="tname">${c.label}</td><td class="num ${c.cls}">${fmt(c.area)}</td><td class="num">₹${c.rate}</td><td class="num ${c.cls}">${rupee(c.area*c.rate)}</td></tr>`).join("")}
-    ${combined}</table>`;
+  const rowA=`<tr><td class="tname">Entire area</td><td class="num">${fmt(sum("total"))}</td><td class="num">₹${s.rateTotal}</td><td class="num">${rupee(A)}</td></tr>`;
+  const rowsB=`<tr><td class="tname">Wall paint</td><td class="num wall">${fmt(sum("wall"))}</td><td class="num">₹${s.rateWall}</td><td class="num wall">${rupee(sum("wall")*s.rateWall)}</td></tr>
+    <tr><td class="tname">Wood paint</td><td class="num wood">${fmt(sum("wood"))}</td><td class="num">₹${s.rateWood}</td><td class="num wood">${rupee(sum("wood")*s.rateWood)}</td></tr>`;
+  const head=`<table><tr><th>Work</th><th>Area<br><small>sq ft</small></th><th>Rate<br><small>₹ / sq ft</small></th><th>Amount<br><small>₹</small></th></tr>`;
+  if(mode==="entire"&&haveA){
+    costTable=`<h3>Labour Cost — entire area method</h3>${head}${rowA}
+      <tr class="grand"><td class="tname">TOTAL LABOUR</td><td class="num"></td><td class="num"></td><td class="num">${rupee(A)}</td></tr></table>`;
+  }else if(mode==="split"&&haveB){
+    costTable=`<h3>Labour Cost — wall + wood method</h3>${head}${rowsB}
+      <tr class="grand"><td class="tname">TOTAL LABOUR</td><td class="num"></td><td class="num"></td><td class="num">${rupee(B)}</td></tr></table>`;
+  }else if(mode==="compare"&&haveA&&haveB){
+    const d=B-A;
+    costTable=`<h3>Labour Cost — both methods compared</h3>${head}
+      <tr class="grp"><td colspan="4">Method A — entire area</td></tr>${rowA}
+      <tr class="grp"><td colspan="4">Method B — wall + wood separately</td></tr>${rowsB}
+      <tr class="grand"><td class="tname">Method A total</td><td class="num"></td><td class="num"></td><td class="num">${rupee(A)}</td></tr>
+      <tr class="grand"><td class="tname">Method B total</td><td class="num"></td><td class="num"></td><td class="num">${rupee(B)}</td></tr>
+      <tr class="grand"><td class="tname">${d>0?"Method B costs more by":d<0?"Method A costs more by":"Both identical"}</td><td class="num"></td><td class="num"></td><td class="num">${rupee(Math.abs(d))}</td></tr></table>`;
+  }else if(haveA||haveB){
+    costTable=`<h3>Labour Cost</h3>${head}${haveA?rowA:""}${haveB?rowsB:""}</table>`;
   }
 
   // Section-wise breakdown (only when showing all sections)
@@ -761,7 +1155,7 @@ function reportHTML(allRooms,opt){
       </div>
       ${measBreakdown(r)}
       ${r.notes?`<p class="notes"><b>Notes:</b> ${esc(r.notes).replace(/\n/g,"<br>")}</p>`:""}
-      ${opt.photos&&r.photos&&r.photos.length?`<div class="ph">${r.photos.map(p=>`<img src="${p}">`).join("")}</div>`:""}
+      ${opt.photos&&r._photoURLs&&r._photoURLs.length?`<div class="ph">${r._photoURLs.map(p=>`<img src="${p}">`).join("")}</div>`:""}
     </section>`).join("");
 
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Painting Measurement — ${esc(title)}</title>
@@ -798,6 +1192,7 @@ function reportHTML(allRooms,opt){
   table.meas td.mnum{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;font-size:15px}
   table.meas td.mnum.wood{color:#8f5c14}
   table.meas td.mnum.wall{color:#0f6d8c;font-size:18px}
+  table.meas .cnv{color:#66798c;font-weight:400;font-size:12px}
   table.meas tr.grp td{background:#eef2f6;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.4px}
   .notes{background:#f6f8fa;border-left:4px solid #a06a1f;padding:10px 14px;font-size:14px;margin-top:16px}
   .ph{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
@@ -822,6 +1217,9 @@ async function openPrintReport(){
   const all=await dbAll();
   const rooms=opt.section==="ALL"?all:all.filter(r=>r.floor===opt.section);
   if(!rooms.length){toast("No rooms in "+(opt.section==="ALL"?"the house yet":opt.section));return;}
+  setBusy(true,"Preparing report…");
+  await attachPhotoURLs(rooms,opt.photos);
+  setBusy(false);
   const w=window.open("","_blank");
   if(!w){toast("Allow pop-ups to print");return;}
   w.document.write(reportHTML(all,opt));
@@ -834,6 +1232,9 @@ async function downloadHtmlReport(){
   const all=await dbAll();
   const rooms=opt.section==="ALL"?all:all.filter(r=>r.floor===opt.section);
   if(!rooms.length){toast("No rooms in "+(opt.section==="ALL"?"the house yet":opt.section));return;}
+  setBusy(true,"Preparing report…");
+  await attachPhotoURLs(rooms,opt.photos);
+  setBusy(false);
   const blob=new Blob([reportHTML(all,opt)],{type:"text/html"});
   const a=document.createElement("a");
   a.href=URL.createObjectURL(blob);
@@ -845,12 +1246,26 @@ async function downloadHtmlReport(){
 }
 
 /* ---------- Backup ---------- */
-async function exportJSON(){
-  const rooms=await dbAll();
-  const blob=new Blob([JSON.stringify({app:"PaintLog",version:1,exported:new Date().toISOString(),rooms},null,1)],{type:"application/json"});
+async function exportJSON(withPhotos){
+  const rooms=(await dbAll()).map(r=>({...r}));
+  if(withPhotos){
+    setBusy(true,"Packing photos…");
+    for(const r of rooms){
+      r.photos=[];
+      for(const pid of r.photoIds||[]){
+        const rec=await photoGet(pid);
+        if(rec) r.photos.push(await blobToDataURL(rec.blob));
+      }
+      delete r.photoIds;
+    }
+    setBusy(false);
+  }else{
+    rooms.forEach(r=>{delete r.photoIds;});
+  }
+  const blob=new Blob([JSON.stringify({app:"PaintLog",version:2,exported:new Date().toISOString(),rooms},null,1)],{type:"application/json"});
   const a=document.createElement("a");
   a.href=URL.createObjectURL(blob);
-  a.download="PaintLog-Backup-"+new Date().toISOString().slice(0,10)+".json";
+  a.download="PaintLog-Backup"+(withPhotos?"-with-photos":"")+"-"+new Date().toISOString().slice(0,10)+".json";
   a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href),4000);
   toast("Backup exported");
@@ -867,22 +1282,35 @@ $("jsonInput").addEventListener("change",async e=>{
     for(const r of incoming){
       delete r.id;
       const match=existing.find(x=>x.name===r.name&&x.floor===r.floor&&(x.number||"")===(r.number||""));
+      const incomingPhotos=Array.isArray(r.photos)?r.photos:[];
+      delete r.photos;
       if(match){
-        // Newer record wins; photos merged from both, deduped
+        /* Newer figures win; photos are always additive so nothing is lost */
         const newer=(r.updated||0)>=(match.updated||0)?r:match;
-        const merged={...newer,id:match.id};
-        const seen=new Set();
-        merged.photos=[...(match.photos||[]),...(r.photos||[])].filter(p=>{
-          if(seen.has(p))return false;seen.add(p);return true;
-        });
+        const merged={...newer,id:match.id,photoIds:(match.photoIds||[]).slice()};
+        const have=new Set();
+        for(const pid of merged.photoIds){const rec=await photoGet(pid);if(rec)have.add(rec.size);}
+        for(const u of incomingPhotos){
+          const blob=await dataURLToBlob(u);
+          if(have.has(blob.size))continue;          // already present
+          merged.photoIds.push(await photoAdd({roomId:match.id,blob,size:blob.size}));
+          have.add(blob.size);
+        }
         await dbPut(merged);
         (newer===r)?updated++:kept++;
+      }else{
+        r.photoIds=[];
+        const newId=await dbAdd(r);
+        for(const u of incomingPhotos){
+          const blob=await dataURLToBlob(u);
+          r.photoIds.push(await photoAdd({roomId:newId,blob,size:blob.size}));
+        }
+        r.id=newId; await dbPut(r); added++;
       }
-      else{await dbAdd(r);added++;}
     }
     toast(`Merged: ${added} new, ${updated} updated, ${kept} kept (newer here)`);
-    renderRooms();renderSummary();
-  }catch(err){toast("Invalid backup file");}
+    renderRooms();renderSummary();updateStorageChip();
+  }catch(err){setBusy(false);toast("Invalid backup file");}
 });
 
 /* ---------- Android back button ---------- */
@@ -907,7 +1335,9 @@ function setupBackButton(){
 }
 
 /* ---------- Boot ---------- */
-initDB().then(()=>{resetForm();renderRooms();renderSummary();setupBackButton();initSettingsUI();
+initDB().then(async ()=>{
+  await migratePhotos();
+  resetForm();syncGlobalUnit();renderRooms();renderSummary();setupBackButton();initSettingsUI();initStorage();
   if("serviceWorker" in navigator&&location.protocol.startsWith("http")){
     navigator.serviceWorker.register("sw.js").catch(()=>{});
   }
