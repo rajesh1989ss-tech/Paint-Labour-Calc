@@ -109,6 +109,28 @@ textarea{min-height:74px;resize:vertical}
 .empty{text-align:center;color:var(--faint);padding:40px 10px;font-size:14px}
 .empty .big{font-size:34px;margin-bottom:10px}
 
+/* Measurement rows */
+.measrow{display:grid;grid-template-columns:1fr 14px 1fr 78px 34px;gap:6px;align-items:center;margin-bottom:7px}
+.measrow input{padding:9px 8px;font-size:15px;text-align:center}
+.measrow .x{text-align:center;color:var(--faint);font-size:13px}
+.measrow .eq{font-size:14px;font-weight:800;text-align:right;font-variant-numeric:tabular-nums;color:var(--ink)}
+.measrow .rm{background:none;border:1px solid var(--line);color:var(--danger);border-radius:7px;height:34px;cursor:pointer;font-size:14px}
+.measlbl{width:100%;margin-bottom:6px;font-size:13px;padding:8px 10px}
+.measitem{border:1px solid var(--line);border-radius:9px;padding:9px;margin-bottom:8px;background:var(--panel2)}
+.measnone{color:var(--faint);font-size:13px;padding:6px 2px}
+
+/* Live calculation strip */
+.livecalc{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:18px}
+.livecalc .lc{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:11px 6px;text-align:center}
+.livecalc .lc b{display:block;font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+.livecalc .lc span{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.4px}
+.livecalc .lc.wall{border-color:var(--wall-deep)}
+.livecalc .lc.wall b{color:var(--wall)}
+.livecalc .lc.wood{border-color:var(--wood-deep)}
+.livecalc .lc.wood b{color:var(--wood)}
+.livecalc .lc.bad{border-color:var(--danger)}
+.livecalc .lc.bad b{color:var(--danger)}
+
 /* Mismatch warning */
 .mwarn{margin-top:12px;background:#241512;border:1px solid #6b3a30;border-left:4px solid var(--danger);border-radius:8px;padding:10px 12px;font-size:13px;color:#f0b8b2}
 .badge-warn{font-size:11px;color:#f0b8b2;background:#241512;border:1px solid #6b3a30;padding:2px 8px;border-radius:20px;white-space:nowrap}
@@ -174,19 +196,22 @@ textarea{min-height:74px;resize:vertical}
       <option>Exterior</option>
       <option>Other</option>
     </select>
-    <div class="row3">
-      <div>
-        <label>Room area (sq ft)</label>
-        <input type="number" id="rTotal" inputmode="decimal" placeholder="0">
-      </div>
-      <div class="wallfield">
-        <label>Wall paint (sq ft)</label>
-        <input type="number" id="rWall" inputmode="decimal" placeholder="0">
-      </div>
-      <div class="woodfield">
-        <label>Wood paint (sq ft)</label>
-        <input type="number" id="rWood" inputmode="decimal" placeholder="0">
-      </div>
+    <label>Entire area — length × breadth (ft)</label>
+    <div id="entList"></div>
+    <button class="btn ghost" type="button" onclick="addEntItem()">＋ Add measurement</button>
+    <label>Extra entire area (sq ft) — optional</label>
+    <input type="number" id="entExtra" inputmode="decimal" placeholder="0">
+
+    <label style="margin-top:20px">Wood area — doors, windows, cupboards (L × B in ft)</label>
+    <div id="woodList"></div>
+    <button class="btn ghost" type="button" onclick="addWoodItem()">＋ Add door / window</button>
+    <label>Extra wood area (sq ft) — optional</label>
+    <input type="number" id="woodExtra" inputmode="decimal" placeholder="0">
+
+    <div class="livecalc">
+      <div class="lc tot"><b id="dispEnt">0</b><span>Entire sq ft</span></div>
+      <div class="lc wood"><b id="dispWood">0</b><span>Wood sq ft</span></div>
+      <div class="lc wall"><b id="dispWall">0</b><span>Wall sq ft — auto</span></div>
     </div>
     <div class="mwarn" id="mismatchWarn" style="display:none"></div>
     <label>Notes</label>
@@ -251,7 +276,7 @@ textarea{min-height:74px;resize:vertical}
     <h2>Settings</h2>
     <label>Mismatch tolerance (%)</label>
     <input type="number" id="tolInput" inputmode="decimal" min="0" max="100" placeholder="5">
-    <div class="photometa" style="margin-top:8px">Rooms where Entire ≠ Wall + Wood by more than this % are flagged with ⚠.</div>
+    <div class="photometa" style="margin-top:8px">Wall area is now derived automatically (Entire − Wood), so new rooms always tally. This flags older rooms, or imported ones, where Entire ≠ Wall + Wood by more than this %.</div>
   </div>
 
   <div class="card">
@@ -406,24 +431,72 @@ function renderFormPhotos(){
 }
 function removeFormPhoto(i){formPhotos.splice(i,1);renderFormPhotos();}
 
-/* Live mismatch check in the form */
-function checkFormMismatch(){
-  const w=$("mismatchWarn");
-  const mi=mismatchInfo(num($("rTotal").value),num($("rWall").value),num($("rWood").value),getSettings().tol);
-  if(mi){
-    w.innerHTML=`⚠ Wall + Wood = <b>${fmt(mi.sum)}</b> sq ft, but Entire area = <b>${fmt(num($("rTotal").value))}</b> sq ft — off by ${mi.errPct.toFixed(1)}%. Check the figures (still saves if correct).`;
+/* ---------- Measurement rows (L × B) ---------- */
+let entItems=[], woodItems=[];
+
+function addEntItem(l,b,label){entItems.push({l:l||"",b:b||"",label:label||""});renderMeas();}
+function addWoodItem(l,b,label){woodItems.push({l:l||"",b:b||"",label:label||""});renderMeas();}
+function removeMeas(kind,i){(kind==="ent"?entItems:woodItems).splice(i,1);renderMeas();}
+function setMeas(kind,i,field,val){(kind==="ent"?entItems:woodItems)[i][field]=val;recalcForm();}
+
+function itemArea(it){return num(it.l)*num(it.b);}
+function sumItems(list){return list.reduce((a,it)=>a+itemArea(it),0);}
+
+function measRowHTML(kind,it,i,ph){
+  return `<div class="measitem">
+    <input class="measlbl" type="text" placeholder="${ph}" value="${esc(it.label)}"
+      oninput="setMeas('${kind}',${i},'label',this.value)">
+    <div class="measrow">
+      <input type="number" inputmode="decimal" placeholder="Length" value="${it.l}"
+        oninput="setMeas('${kind}',${i},'l',this.value)">
+      <span class="x">×</span>
+      <input type="number" inputmode="decimal" placeholder="Breadth" value="${it.b}"
+        oninput="setMeas('${kind}',${i},'b',this.value)">
+      <span class="eq">${fmt(itemArea(it))} ft²</span>
+      <button class="rm" type="button" onclick="removeMeas('${kind}',${i})">✕</button>
+    </div>
+  </div>`;
+}
+function renderMeas(){
+  $("entList").innerHTML = entItems.length
+    ? entItems.map((it,i)=>measRowHTML("ent",it,i,"Label (e.g. North wall, ceiling)")).join("")
+    : `<div class="measnone">No measurements yet — tap "Add measurement".</div>`;
+  $("woodList").innerHTML = woodItems.length
+    ? woodItems.map((it,i)=>measRowHTML("wood",it,i,"Label (e.g. Main door, window 1)")).join("")
+    : `<div class="measnone">No wood items yet — tap "Add door / window".</div>`;
+  recalcForm();
+}
+
+/* Entire = Σ(L×B) + extra · Wood = Σ(L×B) + extra · Wall = Entire − Wood */
+function formFigures(){
+  const total=sumItems(entItems)+num($("entExtra").value);
+  const wood=sumItems(woodItems)+num($("woodExtra").value);
+  return {total,wood,wall:total-wood};
+}
+function recalcForm(){
+  const f=formFigures();
+  $("dispEnt").textContent=fmt(f.total);
+  $("dispWood").textContent=fmt(f.wood);
+  $("dispWall").textContent=fmt(f.wall);
+  const w=$("mismatchWarn"), bad=f.wall<0;
+  document.querySelector(".livecalc .lc.wall").classList.toggle("bad",bad);
+  if(bad){
+    w.innerHTML=`⚠ Wood area (<b>${fmt(f.wood)}</b> sq ft) is larger than the entire area (<b>${fmt(f.total)}</b> sq ft), so wall area comes out negative. Check the measurements.`;
     w.style.display="block";
   }else w.style.display="none";
 }
-["rTotal","rWall","rWood"].forEach(id=>$(id).addEventListener("input",checkFormMismatch));
+["entExtra","woodExtra"].forEach(id=>$(id).addEventListener("input",recalcForm));
 
 /* ---------- Save / edit ---------- */
 async function saveCurrentRoom(){
   const name=$("rName").value.trim();
   if(!name){toast("Give the room a name");$("rName").focus();return;}
+  const f=formFigures();
   const room={
     name, number:$("rNumber").value.trim(), floor:$("rFloor").value,
-    total:num($("rTotal").value), wall:num($("rWall").value), wood:num($("rWood").value),
+    total:f.total, wood:f.wood, wall:f.wall,
+    entItems:entItems.slice(), woodItems:woodItems.slice(),
+    entExtra:num($("entExtra").value), woodExtra:num($("woodExtra").value),
     notes:$("rNotes").value.trim(), photos:formPhotos.slice(),
     updated:Date.now()
   };
@@ -434,8 +507,10 @@ async function saveCurrentRoom(){
   showTab("rooms");
 }
 function resetForm(){
-  ["rName","rNumber","rTotal","rWall","rWood","rNotes","editId"].forEach(id=>$(id).value="");
+  ["rName","rNumber","rNotes","editId","entExtra","woodExtra"].forEach(id=>$(id).value="");
   $("rFloor").selectedIndex=0;
+  entItems=[{l:"",b:"",label:""}]; woodItems=[{l:"",b:"",label:""}];
+  renderMeas();
   formPhotos=[];renderFormPhotos();
   $("formTitle").textContent="Add a room";
   $("saveBtn").innerHTML="✔ Save room";
@@ -447,13 +522,25 @@ async function editRoom(id){
   const r=rooms.find(x=>x.id===id);if(!r)return;
   $("editId").value=r.id;$("rName").value=r.name;$("rNumber").value=r.number||"";
   $("rFloor").value=r.floor||"Ground Floor";
-  $("rTotal").value=r.total||"";$("rWall").value=r.wall||"";$("rWood").value=r.wood||"";
+  /* Rooms saved before dimension entry keep their figures as "extra" amounts */
+  entItems=(r.entItems||[]).map(x=>({...x}));
+  woodItems=(r.woodItems||[]).map(x=>({...x}));
+  if(r.entItems===undefined){
+    $("entExtra").value=r.total||"";
+    $("woodExtra").value=r.wood||"";
+  }else{
+    $("entExtra").value=r.entExtra||"";
+    $("woodExtra").value=r.woodExtra||"";
+  }
+  if(!entItems.length)entItems=[{l:"",b:"",label:""}];
+  if(!woodItems.length)woodItems=[{l:"",b:"",label:""}];
+  renderMeas();
   $("rNotes").value=r.notes||"";
   formPhotos=(r.photos||[]).slice();renderFormPhotos();
   $("formTitle").textContent="Edit: "+r.name;
   $("saveBtn").innerHTML="✔ Update room";
   $("cancelEditBtn").style.display="block";
-  checkFormMismatch();
+  recalcForm();
   showTab("add");window.scrollTo(0,0);
 }
 async function removeRoom(id){
@@ -590,11 +677,24 @@ function initSettingsUI(){
   $("rateWood").addEventListener("input",e=>{saveSettings({rateWood:num(e.target.value)});updateCosts();});
   $("tolInput").addEventListener("input",e=>{
     saveSettings({tol:Math.max(0,num(e.target.value))||0});
-    renderRooms();checkFormMismatch();
+    renderRooms();
   });
 }
 
 /* ---------- Reports ---------- */
+function measBreakdown(r){
+  const rows=(list,cls)=>list.filter(it=>num(it.l)&&num(it.b))
+    .map(it=>`<tr><td>${esc(it.label||"—")}</td><td class="mnum">${it.l} × ${it.b}</td><td class="mnum ${cls}">${fmt(itemArea(it))}</td></tr>`).join("");
+  const e=rows(r.entItems||[],""), w=rows(r.woodItems||[],"wood");
+  if(!e&&!w&&!r.entExtra&&!r.woodExtra)return"";
+  return `<table class="meas"><tr><th>Measurement</th><th>L × B (ft)</th><th>Sq ft</th></tr>
+    ${e?`<tr class="grp"><td colspan="3">Entire area</td></tr>${e}`:""}
+    ${r.entExtra?`<tr><td>Extra entire area</td><td class="mnum">—</td><td class="mnum">${fmt(r.entExtra)}</td></tr>`:""}
+    ${w?`<tr class="grp"><td colspan="3">Wood area</td></tr>${w}`:""}
+    ${r.woodExtra?`<tr><td>Extra wood area</td><td class="mnum">—</td><td class="mnum wood">${fmt(r.woodExtra)}</td></tr>`:""}
+    <tr class="grp"><td colspan="2">Wall area = Entire − Wood</td><td class="mnum wall">${fmt(r.wall)}</td></tr>
+  </table>`;
+}
 function reportOptions(){
   return {
     total:$("incTotal").checked, wall:$("incWall").checked, wood:$("incWood").checked,
@@ -659,6 +759,7 @@ function reportHTML(allRooms,opt){
       <div class="bigrow">
         ${cols.map(c=>`<div class="bigcard ${c.cls}"><div class="bignum">${fmt(r[c.key]||0)}</div><div class="biglabel">${c.label}<br>sq&nbsp;ft</div></div>`).join("")}
       </div>
+      ${measBreakdown(r)}
       ${r.notes?`<p class="notes"><b>Notes:</b> ${esc(r.notes).replace(/\n/g,"<br>")}</p>`:""}
       ${opt.photos&&r.photos&&r.photos.length?`<div class="ph">${r.photos.map(p=>`<img src="${p}">`).join("")}</div>`:""}
     </section>`).join("");
@@ -691,6 +792,13 @@ function reportHTML(allRooms,opt){
   .roomtitle{display:flex;justify-content:space-between;align-items:baseline;border-bottom:3px solid #1c2430;margin-bottom:16px;padding-bottom:8px}
   .room h2{font-size:24px;margin:0}
   .floor{color:#66798c;font-size:14px;font-weight:600}
+  table.meas{margin-top:18px}
+  table.meas th{font-size:12px}
+  table.meas td{padding:7px 10px;font-size:14px}
+  table.meas td.mnum{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;font-size:15px}
+  table.meas td.mnum.wood{color:#8f5c14}
+  table.meas td.mnum.wall{color:#0f6d8c;font-size:18px}
+  table.meas tr.grp td{background:#eef2f6;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.4px}
   .notes{background:#f6f8fa;border-left:4px solid #a06a1f;padding:10px 14px;font-size:14px;margin-top:16px}
   .ph{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
   .ph img{width:100%;border:1px solid #cfd8e0;border-radius:6px;max-height:330px;object-fit:contain;background:#f2f4f6}
@@ -799,7 +907,7 @@ function setupBackButton(){
 }
 
 /* ---------- Boot ---------- */
-initDB().then(()=>{renderRooms();renderSummary();setupBackButton();initSettingsUI();
+initDB().then(()=>{resetForm();renderRooms();renderSummary();setupBackButton();initSettingsUI();
   if("serviceWorker" in navigator&&location.protocol.startsWith("http")){
     navigator.serviceWorker.register("sw.js").catch(()=>{});
   }
