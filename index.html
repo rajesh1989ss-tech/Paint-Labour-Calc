@@ -232,6 +232,7 @@ textarea{min-height:74px;resize:vertical}
       <option>Ground Floor</option>
       <option>First Floor</option>
       <option>Exterior</option>
+      <option>Grill Gates</option>
       <option>Other</option>
     </select>
     <div class="globalunit">
@@ -328,6 +329,17 @@ textarea{min-height:74px;resize:vertical}
     <div class="costpanel" id="costPanel"></div>
   </div>
 
+  <div class="card" id="grillCard">
+    <h2>Grill gates</h2>
+    <div class="raterow">
+      <div class="rlabel">Grill rate<small id="areaGrillLbl">0 sq ft</small></div>
+      <input type="number" id="rateGrill" inputmode="decimal" placeholder="₹/sq ft">
+      <div class="ramount" id="costGrill">—</div>
+    </div>
+    <div class="check"><input type="checkbox" id="incGrillLabour"><label style="margin:0;text-transform:none;font-size:14px;color:var(--ink)" for="incGrillLabour">Add grill gates to the labour total</label></div>
+    <div class="photometa" id="grillNote" style="margin-top:8px"></div>
+  </div>
+
   <div class="card">
     <h2>Settings</h2>
     <label>Warn if wood exceeds this % of a room</label>
@@ -352,6 +364,7 @@ textarea{min-height:74px;resize:vertical}
       <option>Ground Floor</option>
       <option>First Floor</option>
       <option>Exterior</option>
+      <option>Grill Gates</option>
       <option>Other</option>
     </select>
     <div class="check"><input type="checkbox" id="incPhotos" checked><label style="margin:0;text-transform:none;font-size:14px;color:var(--ink)" for="incPhotos">Include photos in report</label></div>
@@ -498,7 +511,7 @@ function toast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show")
 /* ---------- Settings (rates + tolerance) ---------- */
 const SETTINGS_KEY="paintlog-settings";
 function getSettings(){
-  let s={tol:5,rateTotal:0,rateWall:0,rateWood:0,costMode:"compare",woodMaxPct:35,woodItemMax:60,defaultUnit:"ft"};
+  let s={tol:5,rateTotal:0,rateWall:0,rateWood:0,costMode:"compare",woodMaxPct:35,woodItemMax:60,defaultUnit:"ft",rateGrill:0,includeGrill:false};
   try{Object.assign(s,JSON.parse(localStorage.getItem(SETTINGS_KEY)||"{}"));}catch(e){}
   return s;
 }
@@ -852,7 +865,9 @@ async function wipeAll(){
 }
 
 /* ---------- Rooms list ---------- */
-const FLOOR_ORDER=["Ground Floor","First Floor","Exterior","Other"];
+const FLOOR_ORDER=["Ground Floor","First Floor","Exterior","Grill Gates","Other"];
+const GRILL="Grill Gates";
+const isGrill=r=>r.floor===GRILL;
 function sortRooms(rs){
   return rs.sort((a,b)=>{
     const f=FLOOR_ORDER.indexOf(a.floor)-FLOOR_ORDER.indexOf(b.floor);
@@ -872,7 +887,10 @@ async function renderRooms(){
     if(r.floor!==lastFloor){
       const fr=rooms.filter(x=>x.floor===r.floor);
       const fw=fr.reduce((a,x)=>a+x.wall,0),fd=fr.reduce((a,x)=>a+x.wood,0);
-      html+=`<div class="floorhead">${esc(r.floor)} <span class="floorsub">wall ${fmt(fw)} · wood ${fmt(fd)} sq ft</span></div>`;
+      const fa=fr.reduce((a,x)=>a+x.total,0);
+      html+= r.floor===GRILL
+        ? `<div class="floorhead">${esc(r.floor)} <span class="floorsub">${fmt(fa)} sq ft · separate rate</span></div>`
+        : `<div class="floorhead">${esc(r.floor)} <span class="floorsub">wall ${fmt(fw)} · wood ${fmt(fd)} sq ft</span></div>`;
       lastFloor=r.floor;
     }
     const ph=(r.photoIds||[]);
@@ -958,10 +976,13 @@ document.addEventListener("keydown",e=>{
 
 /* ---------- Summary ---------- */
 async function renderSummary(){
-  const rooms=await dbAll();
+  const all=await dbAll();
+  const rooms=all.filter(r=>!isGrill(r));
+  const grills=all.filter(isGrill);
   const wall=rooms.reduce((a,r)=>a+r.wall,0);
   const wood=rooms.reduce((a,r)=>a+r.wood,0);
   const total=rooms.reduce((a,r)=>a+r.total,0);
+  const grillArea=grills.reduce((a,r)=>a+r.total,0);
   $("tWall").textContent=fmt(wall);
   $("tWood").textContent=fmt(wood);
   $("tRooms").textContent=rooms.length;
@@ -972,22 +993,40 @@ async function renderSummary(){
   $("legWood").textContent=`Wood paint ${100-wp}%`;
   let fh="";
   for(const f of FLOOR_ORDER){
-    const fr=rooms.filter(r=>r.floor===f);
+    const fr=all.filter(r=>r.floor===f);
     if(!fr.length)continue;
-    fh+=`<div class="floorline"><span>${esc(f)} · ${fr.length} room(s)</span><span>wall <b>${fmt(fr.reduce((a,r)=>a+r.wall,0))}</b> · wood <b>${fmt(fr.reduce((a,r)=>a+r.wood,0))}</b></span></div>`;
+    fh+= f===GRILL
+      ? `<div class="floorline"><span>${esc(f)} · ${fr.length} item(s)</span><span>area <b>${fmt(grillArea)}</b> sq ft · kept separate</span></div>`
+      : `<div class="floorline"><span>${esc(f)} · ${fr.length} room(s)</span><span>wall <b>${fmt(fr.reduce((a,r)=>a+r.wall,0))}</b> · wood <b>${fmt(fr.reduce((a,r)=>a+r.wood,0))}</b></span></div>`;
   }
   $("floorTotals").innerHTML=fh;
   lastAreas={total,wall,wood};
+  lastGrill={area:grillArea,count:grills.length};
   updateCosts();
 }
 
 let lastAreas={total:0,wall:0,wood:0};
-function costA(){return lastAreas.total*getSettings().rateTotal;}          // entire area method
-function costB(){const s=getSettings();return lastAreas.wall*s.rateWall+lastAreas.wood*s.rateWood;}
+let lastGrill={area:0,count:0};
+function grillCost(){const s=getSettings();return lastGrill.area*s.rateGrill;}
+function grillIncluded(){const s=getSettings();return !!s.includeGrill&&s.rateGrill>0&&lastGrill.area>0;}
+function costA(){return lastAreas.total*getSettings().rateTotal+(grillIncluded()?grillCost():0);}
+function costB(){const s=getSettings();return lastAreas.wall*s.rateWall+lastAreas.wood*s.rateWood+(grillIncluded()?grillCost():0);}
 function setCostMode(m){saveSettings({costMode:m});updateCosts();}
+
+function updateGrillCard(){
+  const s=getSettings();
+  $("areaGrillLbl").textContent=fmt(lastGrill.area)+" sq ft";
+  $("costGrill").textContent=s.rateGrill>0?inr(grillCost()):"—";
+  $("grillNote").textContent = lastGrill.count===0
+    ? "No grill gates added yet. Choose \\u201cGrill Gates\\u201d as the section when adding one."
+    : grillIncluded()
+      ? `${lastGrill.count} item(s) · ${inr(grillCost())} is added to the labour totals below.`
+      : `${lastGrill.count} item(s) · kept out of the labour totals, quoted separately.`;
+}
 
 function updateCosts(){
   const s=getSettings();
+  updateGrillCard();
   $("areaTotalLbl").textContent=fmt(lastAreas.total)+" sq ft";
   $("areaWallLbl").textContent=fmt(lastAreas.wall)+" sq ft";
   $("areaWoodLbl").textContent=fmt(lastAreas.wood)+" sq ft";
@@ -1005,13 +1044,15 @@ function updateCosts(){
 
   if(mode==="entire"){
     p.innerHTML=!haveA?`<div class="diff">Enter an entire-area rate above to see this costing.</div>`:
-      `<div class="crow"><span>Entire area<small>${fmt(lastAreas.total)} sq ft × ₹${s.rateTotal}</small></span><b>${inr(A)}</b></div>
+      `<div class="crow"><span>Entire area<small>${fmt(lastAreas.total)} sq ft × ₹${s.rateTotal}</small></span><b>${inr(lastAreas.total*s.rateTotal)}</b></div>
+       ${grillIncluded()?`<div class="crow"><span>Grill gates<small>${fmt(lastGrill.area)} sq ft × ₹${s.rateGrill}</small></span><b>${inr(grillCost())}</b></div>`:""}
        <div class="crow grand"><span>Total labour</span><b>${inr(A)}</b></div>
        <div class="diff">${perSqft(A)}</div>`;
   }else if(mode==="split"){
     p.innerHTML=!haveB?`<div class="diff">Enter wall and wood rates above to see this costing.</div>`:
       `<div class="crow wall"><span>Wall paint<small>${fmt(lastAreas.wall)} sq ft × ₹${s.rateWall}</small></span><b>${inr(lastAreas.wall*s.rateWall)}</b></div>
        <div class="crow wood"><span>Wood paint<small>${fmt(lastAreas.wood)} sq ft × ₹${s.rateWood}</small></span><b>${inr(lastAreas.wood*s.rateWood)}</b></div>
+       ${grillIncluded()?`<div class="crow"><span>Grill gates<small>${fmt(lastGrill.area)} sq ft × ₹${s.rateGrill}</small></span><b>${inr(grillCost())}</b></div>`:""}
        <div class="crow grand"><span>Total labour</span><b>${inr(B)}</b></div>
        <div class="diff">${perSqft(B)}</div>`;
   }else{
@@ -1023,7 +1064,7 @@ function updateCosts(){
       `<div class="crow"><span>Method A — entire area<small>${fmt(lastAreas.total)} sq ft × ₹${s.rateTotal}</small></span><b>${inr(A)}</b></div>
        <div class="crow"><span>Method B — wall + wood<small>${fmt(lastAreas.wall)}×₹${s.rateWall} + ${fmt(lastAreas.wood)}×₹${s.rateWood}</small></span><b>${inr(B)}</b></div>
        <div class="crow grand"><span>${d>0?"B costs more":d<0?"A costs more":"Identical"}</span><b>${inr(Math.abs(d))}</b></div>
-       <div class="diff">Difference <b>${pct>=0?"+":""}${pct.toFixed(1)}%</b> · Method A works out to <b>₹${lastAreas.total>0?(A/lastAreas.total).toFixed(2):"0"}</b> and Method B to <b>₹${lastAreas.total>0?(B/lastAreas.total).toFixed(2):"0"}</b> per sq ft of entire area.</div>`;
+       <div class="diff">${grillIncluded()?`Both totals include grill gates (${inr(grillCost())}). `:lastGrill.area>0?`Grill gates (${fmt(lastGrill.area)} sq ft) are quoted separately. `:""}Difference <b>${pct>=0?"+":""}${pct.toFixed(1)}%</b> · Method A works out to <b>₹${lastAreas.total>0?(A/lastAreas.total).toFixed(2):"0"}</b> and Method B to <b>₹${lastAreas.total>0?(B/lastAreas.total).toFixed(2):"0"}</b> per sq ft of entire area.</div>`;
     }
   }
 }
@@ -1032,6 +1073,10 @@ function initSettingsUI(){
   $("rateTotal").value=s.rateTotal||"";
   $("rateWall").value=s.rateWall||"";
   $("rateWood").value=s.rateWood||"";
+  $("rateGrill").value=s.rateGrill||"";
+  $("incGrillLabour").checked=!!s.includeGrill;
+  $("rateGrill").addEventListener("input",e=>{saveSettings({rateGrill:num(e.target.value)});updateCosts();});
+  $("incGrillLabour").addEventListener("change",e=>{saveSettings({includeGrill:e.target.checked});updateCosts();});
   $("tolInput").value=s.tol;
   $("woodPctInput").value=s.woodMaxPct;
   $("woodItemInput").value=s.woodItemMax;
@@ -1085,7 +1130,9 @@ function reportOptions(){
   };
 }
 function reportHTML(allRooms,opt){
-  const rooms = opt.section==="ALL" ? allRooms : allRooms.filter(r=>r.floor===opt.section);
+  const scoped = opt.section==="ALL" ? allRooms : allRooms.filter(r=>r.floor===opt.section);
+  const grillRooms = scoped.filter(isGrill);
+  const rooms = scoped.filter(r=>!isGrill(r));      // grill gates are costed on their own
   const cols=[];
   if(opt.total)cols.push({key:"total",label:"Entire Area",cls:"tot"});
   if(opt.wall)cols.push({key:"wall",label:"Wall Paint",cls:"wall"});
@@ -1100,24 +1147,29 @@ function reportHTML(allRooms,opt){
   // Labour cost table — follows the costing method chosen in Summary
   const s=getSettings(), mode=s.costMode||"compare";
   const rupee=n=>"₹"+Math.round(n).toLocaleString("en-IN");
-  const A=sum("total")*s.rateTotal, B=sum("wall")*s.rateWall+sum("wood")*s.rateWood;
+  const gArea=grillRooms.reduce((a,r)=>a+r.total,0);
+  const gCost=gArea*s.rateGrill;
+  const gIn=!!s.includeGrill&&s.rateGrill>0&&gArea>0;
+  const A=sum("total")*s.rateTotal+(gIn?gCost:0), B=sum("wall")*s.rateWall+sum("wood")*s.rateWood+(gIn?gCost:0);
   const haveA=s.rateTotal>0, haveB=s.rateWall>0&&s.rateWood>0;
   let costTable="";
+  const rowG=gIn?`<tr><td class="tname">Grill gates</td><td class="num">${fmt(gArea)}</td><td class="num">₹${s.rateGrill}</td><td class="num">${rupee(gCost)}</td></tr>`:"";
   const rowA=`<tr><td class="tname">Entire area</td><td class="num">${fmt(sum("total"))}</td><td class="num">₹${s.rateTotal}</td><td class="num">${rupee(A)}</td></tr>`;
   const rowsB=`<tr><td class="tname">Wall paint</td><td class="num wall">${fmt(sum("wall"))}</td><td class="num">₹${s.rateWall}</td><td class="num wall">${rupee(sum("wall")*s.rateWall)}</td></tr>
     <tr><td class="tname">Wood paint</td><td class="num wood">${fmt(sum("wood"))}</td><td class="num">₹${s.rateWood}</td><td class="num wood">${rupee(sum("wood")*s.rateWood)}</td></tr>`;
   const head=`<table><tr><th>Work</th><th>Area<br><small>sq ft</small></th><th>Rate<br><small>₹ / sq ft</small></th><th>Amount<br><small>₹</small></th></tr>`;
   if(mode==="entire"&&haveA){
-    costTable=`<h3>Labour Cost — entire area method</h3>${head}${rowA}
+    costTable=`<h3>Labour Cost — entire area method</h3>${head}${rowA}${rowG}
       <tr class="grand"><td class="tname">TOTAL LABOUR</td><td class="num"></td><td class="num"></td><td class="num">${rupee(A)}</td></tr></table>`;
   }else if(mode==="split"&&haveB){
-    costTable=`<h3>Labour Cost — wall + wood method</h3>${head}${rowsB}
+    costTable=`<h3>Labour Cost — wall + wood method</h3>${head}${rowsB}${rowG}
       <tr class="grand"><td class="tname">TOTAL LABOUR</td><td class="num"></td><td class="num"></td><td class="num">${rupee(B)}</td></tr></table>`;
   }else if(mode==="compare"&&haveA&&haveB){
     const d=B-A;
     costTable=`<h3>Labour Cost — both methods compared</h3>${head}
       <tr class="grp"><td colspan="4">Method A — entire area</td></tr>${rowA}
       <tr class="grp"><td colspan="4">Method B — wall + wood separately</td></tr>${rowsB}
+      ${rowG?`<tr class="grp"><td colspan="4">Added to both methods</td></tr>${rowG}`:""}
       <tr class="grand"><td class="tname">Method A total</td><td class="num"></td><td class="num"></td><td class="num">${rupee(A)}</td></tr>
       <tr class="grand"><td class="tname">Method B total</td><td class="num"></td><td class="num"></td><td class="num">${rupee(B)}</td></tr>
       <tr class="grand"><td class="tname">${d>0?"Method B costs more by":d<0?"Method A costs more by":"Both identical"}</td><td class="num"></td><td class="num"></td><td class="num">${rupee(Math.abs(d))}</td></tr></table>`;
@@ -1125,10 +1177,20 @@ function reportHTML(allRooms,opt){
     costTable=`<h3>Labour Cost</h3>${head}${haveA?rowA:""}${haveB?rowsB:""}</table>`;
   }
 
+  // Grill gates — always its own block, in or out of the labour total
+  let grillTable="";
+  if(grillRooms.length){
+    const rows=grillRooms.map(r=>`<tr><td class="tname">${r.number?esc(r.number)+". ":""}${esc(r.name)}</td><td class="num">${fmt(r.total)}</td>${s.rateGrill>0?`<td class="num">${rupee(r.total*s.rateGrill)}</td>`:""}</tr>`).join("");
+    grillTable=`<h3>Grill Gates — ${gIn?"included in labour total":"quoted separately"}</h3>
+    <table><tr><th>Item</th><th>Area<br><small>sq ft</small></th>${s.rateGrill>0?`<th>Amount<br><small>₹ at ₹${s.rateGrill}/sq ft</small></th>`:""}</tr>
+    ${rows}
+    <tr class="grand"><td class="tname">TOTAL GRILL</td><td class="num">${fmt(gArea)}</td>${s.rateGrill>0?`<td class="num">${rupee(gCost)}</td>`:""}</tr></table>`;
+  }
+
   // Section-wise breakdown (only when showing all sections)
   let sectionTable="";
   if(opt.section==="ALL"){
-    const rows=FLOOR_ORDER.map(f=>{
+    const rows=FLOOR_ORDER.filter(f=>f!==GRILL).map(f=>{
       const fr=rooms.filter(r=>r.floor===f);
       if(!fr.length)return"";
       return `<tr><td class="tname">${esc(f)}<small>${fr.length} room(s)</small></td>${cols.map(c=>`<td class="num ${c.cls}">${fmt(fr.reduce((a,r)=>a+(r[c.key]||0),0))}</td>`).join("")}</tr>`;
@@ -1144,7 +1206,7 @@ function reportHTML(allRooms,opt){
     `<tr><td class="tname">${r.number?esc(r.number)+". ":""}${esc(r.name)}<small>${esc(r.floor)}</small></td>${cols.map(c=>`<td class="num ${c.cls}">${fmt(r[c.key]||0)}</td>`).join("")}</tr>`).join("");
 
   // One page per room, huge numerals
-  const roomPages=sortRooms(rooms.slice()).map(r=>`
+  const roomPages=sortRooms(scoped.slice()).map(r=>`
     <section class="room">
       <div class="roomtitle">
         <h2>${r.number?esc(r.number)+". ":""}${esc(r.name)}</h2>
@@ -1200,9 +1262,10 @@ function reportHTML(allRooms,opt){
   @media print{body{padding:0}.bignum{font-size:46px}.ph img{max-height:290px}}
 </style></head><body>
   <h1>Painting Measurement — ${esc(title)}</h1>
-  <div class="sub">Prepared on ${today} · ${rooms.length} room(s) · All figures in square feet</div>
+  <div class="sub">Prepared on ${today} · ${rooms.length} room(s)${grillRooms.length?" + "+grillRooms.length+" grill item(s)":""} · All figures in square feet</div>
   <div class="toprow">${bigCards}</div>
   ${costTable}
+  ${grillTable}
   ${sectionTable}
   <h3>Room-wise Figures</h3>
   <table><tr><th>Room</th>${cols.map(c=>`<th>${c.label}<br><small>sq ft</small></th>`).join("")}</tr>

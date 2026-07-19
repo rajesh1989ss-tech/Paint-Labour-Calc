@@ -1,4 +1,4 @@
-const CACHE = "paintlog-v7";
+const CACHE = "paintlog-v8";
 const ASSETS = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png", "./icon-512-maskable.png"];
 
 self.addEventListener("install", e => {
